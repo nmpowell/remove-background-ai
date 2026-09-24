@@ -6,9 +6,10 @@ import pytest
 from PIL import Image, ImageCms
 
 from remove_background_ai import remove_background
+from remove_background_ai.errors import EditError
 from remove_background_ai.models import ImageSize, RemovalOptions
 
-from .conftest import FakeEditor, cutout_png
+from .conftest import FakeEditor, cutout_png, png_bytes
 
 SOURCE_RGB = (200, 30, 30)
 WriteImage = Callable[..., Path]
@@ -16,6 +17,12 @@ WriteImage = Callable[..., Path]
 
 def icc(colour_space: ImageCms._CmsProfileCompatible) -> bytes:
     return ImageCms.ImageCmsProfile(ImageCms.createProfile(colour_space)).tobytes()
+
+
+def jpeg_bytes(image: Image.Image) -> bytes:
+    buffer = io.BytesIO()
+    image.save(buffer, format="JPEG")
+    return buffer.getvalue()
 
 
 def decode(png: bytes) -> Image.Image:
@@ -140,3 +147,37 @@ class TestRemoveBackground:
         )
 
         assert cutout.png == model_png
+
+
+class TestRemoveBackgroundRejectsAnUnusableModelImage:
+    @pytest.mark.parametrize(
+        "model_image, message",
+        [
+            (b"not an image", "could not be decoded"),
+            (jpeg_bytes(Image.new("RGB", (1024, 1024))), "JPEG, not PNG"),
+            (cutout_png(1536, 1024), "1536x1024, not the requested 1024x1024"),
+            (png_bytes(Image.new("RGB", (1024, 1024))), "no transparent pixels"),
+            (
+                png_bytes(Image.new("RGBA", (1024, 1024), (0, 0, 0, 255))),
+                "no transparent pixels",
+            ),
+            (
+                png_bytes(Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))),
+                "entirely transparent",
+            ),
+        ],
+        ids=["garbage", "jpeg", "wrong-size", "no-alpha", "opaque", "transparent"],
+    )
+    @pytest.mark.parametrize("mode", ["original", "generated"])
+    def test_raises_edit_error(
+        self, write_image: WriteImage, model_image: bytes, message: str, mode: str
+    ) -> None:
+        source = write_image(Image.new("RGB", (1024, 1024), SOURCE_RGB))
+        editor = FakeEditor(response_png=model_image)
+
+        with pytest.raises(EditError, match=message):
+            remove_background(
+                source,
+                editor=editor,
+                options=RemovalOptions.model_validate({"mode": mode}),
+            )

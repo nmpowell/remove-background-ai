@@ -3,6 +3,7 @@ from pathlib import Path
 
 from PIL import Image, ImageChops, ImageCms, ImageOps
 
+from .errors import EditError
 from .models import ImageSize
 
 
@@ -26,11 +27,26 @@ def encode_request(image: Image.Image, size: ImageSize) -> bytes:
     return _png(image.resize((size.width, size.height), Image.Resampling.LANCZOS))
 
 
-def decode_cutout(png: bytes) -> Image.Image:
-    """Decode the PNG the model returned."""
-    with Image.open(io.BytesIO(png)) as image:
-        image.load()
-        return image.convert("RGBA")
+def decode_cutout(png: bytes, size: ImageSize) -> Image.Image:
+    """Decode the PNG the model returned and check it is a usable cutout."""
+    try:
+        with Image.open(io.BytesIO(png)) as image:
+            image.load()
+            image_format = image.format
+            cutout = image.convert("RGBA")
+    except (OSError, ValueError, Image.DecompressionBombError) as error:
+        raise EditError(f"the model's image could not be decoded: {error}") from None
+    if image_format != "PNG":
+        raise EditError(f"the model returned {image_format}, not PNG")
+    returned = ImageSize(width=cutout.width, height=cutout.height)
+    if returned != size:
+        raise EditError(f"the model returned {returned}, not the requested {size}")
+    lowest, highest = cutout.getchannel("A").getextrema()
+    if lowest == 255:
+        raise EditError("the model's image has no transparent pixels")
+    if highest == 0:
+        raise EditError("the model's image is entirely transparent")
+    return cutout
 
 
 def apply_alpha(source: Image.Image, cutout: Image.Image) -> bytes:
