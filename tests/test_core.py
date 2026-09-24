@@ -273,3 +273,12 @@ class TestRemoveBackgroundArguments:
 
         with pytest.raises(ValidationError, match="instance of RemovalOptions"):
             remove_background(source, editor=editor, options={"quality": "low"})  # type: ignore[arg-type]
+
+    def test_uses_the_openai_api_when_no_editor_is_given(
+        self, write_image: WriteImage, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        source = write_image(Image.new("RGB", (1024, 1024), SOURCE_RGB))
+
+        with pytest.raises(EditError, match="OPENAI_API_KEY"):
+            remove_background(source)
