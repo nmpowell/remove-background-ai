@@ -255,3 +255,21 @@ class TestImageSize:
     ) -> None:
         with pytest.raises(ValidationError):
             ImageSize.model_validate(text)
+
+
+class TestRemoveBackgroundArguments:
+    def test_requires_a_path_not_a_string(
+        self, editor: FakeEditor, write_image: WriteImage
+    ) -> None:
+        source = write_image(Image.new("RGB", (1024, 1024), SOURCE_RGB))
+
+        with pytest.raises(ValidationError, match="instance of Path"):
+            remove_background(str(source), editor=editor)  # type: ignore[arg-type]
+
+    def test_requires_removal_options_not_a_dict(
+        self, editor: FakeEditor, write_image: WriteImage
+    ) -> None:
+        source = write_image(Image.new("RGB", (1024, 1024), SOURCE_RGB))
+
+        with pytest.raises(ValidationError, match="instance of RemovalOptions"):
+            remove_background(source, editor=editor, options={"quality": "low"})  # type: ignore[arg-type]
