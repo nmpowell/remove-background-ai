@@ -53,8 +53,20 @@ def remove_background(
     )
     cutout = imaging.decode_cutout(response.image, size)
     if options.mode == "generated":
-        return Cutout(png=response.image)
-    return Cutout(png=imaging.apply_alpha(source, cutout))
+        png, output_size = response.image, size
+    else:
+        png, output_size = imaging.apply_alpha(source, cutout), source_size
+    return Cutout(
+        png=png,
+        mode=options.mode,
+        model=options.model,
+        quality=options.quality,
+        source_size=source_size,
+        model_size=size,
+        output_size=output_size,
+        request_id=response.request_id,
+        usage=response.usage,
+    )
 
 
 def _prompt(options: RemovalOptions, *, masked: bool) -> str:

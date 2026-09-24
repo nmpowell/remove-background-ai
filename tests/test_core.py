@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 from PIL import Image, ImageCms
+from pydantic import ValidationError
 
 from remove_background_ai import remove_background
 from remove_background_ai.errors import EditError, InvalidInputError
@@ -207,3 +208,50 @@ class TestRemoveBackgroundRefusesAnUnusableSource:
             remove_background(source, editor=editor)
 
         assert editor.requests == []
+
+
+class TestCutoutMetadata:
+    def test_describes_the_request_and_result_without_the_image(
+        self, editor: FakeEditor, write_image: WriteImage
+    ) -> None:
+        source = write_image(Image.new("RGB", (1920, 1080), SOURCE_RGB))
+
+        cutout = remove_background(
+            source, editor=editor, options=RemovalOptions(quality="medium")
+        )
+
+        assert cutout.model_dump(mode="json") == {
+            "mode": "original",
+            "model": "gpt-image-2.5-sunburst-2026-09-08",
+            "quality": "medium",
+            "source_size": "1920x1080",
+            "model_size": "1920x1088",
+            "output_size": "1920x1080",
+            "request_id": "req_fake",
+            "usage": None,
+        }
+
+    def test_generated_mode_reports_the_model_size_as_the_output_size(
+        self, editor: FakeEditor, write_image: WriteImage
+    ) -> None:
+        source = write_image(Image.new("RGB", (1920, 1080), SOURCE_RGB))
+
+        cutout = remove_background(
+            source, editor=editor, options=RemovalOptions(mode="generated")
+        )
+
+        assert cutout.output_size == ImageSize(width=1920, height=1088)
+
+
+class TestImageSize:
+    def test_parses_the_width_x_height_form(self) -> None:
+        assert ImageSize.model_validate("1920x1080") == ImageSize(
+            width=1920, height=1080
+        )
+
+    @pytest.mark.parametrize("text", ["1920", "1920xtall", "0x1080"])
+    def test_refuses_text_that_is_not_a_positive_width_x_height(
+        self, text: str
+    ) -> None:
+        with pytest.raises(ValidationError):
+            ImageSize.model_validate(text)

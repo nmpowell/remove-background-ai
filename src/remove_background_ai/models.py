@@ -1,6 +1,14 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, PositiveInt, StringConstraints
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    PositiveInt,
+    StringConstraints,
+    model_serializer,
+    model_validator,
+)
 
 ModelName = Literal[
     "gpt-image-2.5-sunburst-2026-09-08",
@@ -24,6 +32,18 @@ class ImageSize(BaseModel):
 
     width: PositiveInt
     height: PositiveInt
+
+    @model_validator(mode="before")
+    @classmethod
+    def _parse_width_x_height(cls, value: object) -> object:
+        if isinstance(value, str):
+            width, _, height = value.partition("x")
+            return {"width": width, "height": height}
+        return value
+
+    @model_serializer(mode="plain", when_used="json")
+    def _serialise_as_width_x_height(self) -> str:
+        return str(self)
 
     def __str__(self) -> str:
         return f"{self.width}x{self.height}"
@@ -90,8 +110,20 @@ class EditResponse(BaseModel):
 
 
 class Cutout(BaseModel):
-    """A transparent PNG with the background removed."""
+    """A transparent PNG with the background removed, and how it was made.
+
+    ``png`` is left out of ``model_dump()`` so the metadata can be logged or
+    written as JSON.
+    """
 
     model_config = _FROZEN
 
-    png: bytes
+    png: bytes = Field(exclude=True, repr=False)
+    mode: OutputMode
+    model: ModelName
+    quality: Quality
+    source_size: ImageSize
+    model_size: ImageSize
+    output_size: ImageSize
+    request_id: str | None
+    usage: Usage | None
