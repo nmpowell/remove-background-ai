@@ -6,7 +6,7 @@ import pytest
 from PIL import Image, ImageCms
 
 from remove_background_ai import remove_background
-from remove_background_ai.errors import EditError
+from remove_background_ai.errors import EditError, InvalidInputError
 from remove_background_ai.models import ImageSize, RemovalOptions
 
 from .conftest import FakeEditor, cutout_png, png_bytes
@@ -181,3 +181,29 @@ class TestRemoveBackgroundRejectsAnUnusableModelImage:
                 editor=editor,
                 options=RemovalOptions.model_validate({"mode": mode}),
             )
+
+
+class TestRemoveBackgroundRefusesAnUnusableSource:
+    def test_refuses_a_file_that_is_not_an_image(
+        self, editor: FakeEditor, tmp_path: Path
+    ) -> None:
+        source = tmp_path / "notes.png"
+        source.write_text("not an image")
+
+        with pytest.raises(InvalidInputError, match="cannot be read as an image"):
+            remove_background(source, editor=editor)
+
+        assert editor.requests == []
+
+    def test_refuses_an_animated_image(
+        self, editor: FakeEditor, write_image: WriteImage
+    ) -> None:
+        frames = [Image.new("RGB", (1024, 1024), colour) for colour in ("red", "blue")]
+        source = write_image(
+            frames[0], "animation.gif", save_all=True, append_images=frames[1:]
+        )
+
+        with pytest.raises(InvalidInputError, match="animated"):
+            remove_background(source, editor=editor)
+
+        assert editor.requests == []

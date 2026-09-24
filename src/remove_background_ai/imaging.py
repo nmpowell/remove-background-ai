@@ -3,7 +3,7 @@ from pathlib import Path
 
 from PIL import Image, ImageChops, ImageCms, ImageOps
 
-from .errors import EditError
+from .errors import EditError, InvalidInputError
 from .models import ImageSize
 
 
@@ -12,11 +12,17 @@ def load_source(path: Path) -> Image.Image:
 
     Its colour profile survives in ``info`` only when it describes RGB samples.
     """
-    with Image.open(path) as image:
-        image.load()
-        oriented = ImageOps.exif_transpose(image)
-        has_alpha = "A" in oriented.getbands() or "transparency" in oriented.info
-        source = oriented.convert("RGBA" if has_alpha else "RGB")
+    try:
+        with Image.open(path) as image:
+            image.load()
+            frames = getattr(image, "n_frames", 1)
+            oriented = ImageOps.exif_transpose(image)
+    except (OSError, ValueError, Image.DecompressionBombError) as error:
+        raise InvalidInputError(f"{path} cannot be read as an image: {error}") from None
+    if frames > 1:
+        raise InvalidInputError(f"{path} is animated; use a single-frame image")
+    has_alpha = "A" in oriented.getbands() or "transparency" in oriented.info
+    source = oriented.convert("RGBA" if has_alpha else "RGB")
     profile = source.info.get("icc_profile")
     source.info = {"icc_profile": profile} if _is_rgb_profile(profile) else {}
     return source
