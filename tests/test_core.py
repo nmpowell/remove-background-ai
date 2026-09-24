@@ -70,16 +70,29 @@ class TestRemoveBackground:
         assert editor.requests[0].size == ImageSize(width=800, height=1200)
         assert decode(cutout.png).size == (800, 1200)
 
-    def test_never_makes_a_semi_transparent_source_more_opaque(
-        self, editor: FakeEditor, write_image: WriteImage
+    @pytest.mark.parametrize(
+        "source_alpha, model_alpha, expected_alpha",
+        [(128, 128, 128), (100, 200, 100), (200, 100, 100), (128, 0, 0)],
+    )
+    def test_takes_the_lower_of_the_source_and_model_alpha(
+        self,
+        write_image: WriteImage,
+        source_alpha: int,
+        model_alpha: int,
+        expected_alpha: int,
     ) -> None:
-        source = write_image(Image.new("RGBA", (1024, 1024), (*SOURCE_RGB, 128)))
+        # One transparent and one opaque pixel keep the model image a valid cutout.
+        model_image = Image.new("RGBA", (1024, 1024), (*SOURCE_RGB, model_alpha))
+        model_image.putpixel((0, 0), (*SOURCE_RGB, 0))
+        model_image.putpixel((1023, 1023), (*SOURCE_RGB, 255))
+        editor = FakeEditor(response_png=png_bytes(model_image))
+        source = write_image(
+            Image.new("RGBA", (1024, 1024), (*SOURCE_RGB, source_alpha))
+        )
 
         cutout = remove_background(source, editor=editor)
 
-        result = decode(cutout.png)
-        assert result.getpixel((512, 512)) == (*SOURCE_RGB, 128)
-        assert result.getpixel((0, 0)) == (*SOURCE_RGB, 0)
+        assert decode(cutout.png).getpixel((512, 512)) == (*SOURCE_RGB, expected_alpha)
 
     def test_keeps_an_rgb_colour_profile(
         self, editor: FakeEditor, write_image: WriteImage
