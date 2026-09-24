@@ -1,5 +1,7 @@
 import json
+import os
 import pkgutil
+import stat
 import tomllib
 from collections.abc import Callable
 from pathlib import Path
@@ -376,6 +378,20 @@ class TestPerImageResults:
         [record] = json.loads(result.stdout)
         assert record["input"] == str(source)
         assert record["error"].startswith(f"cannot create {directory}: ")
+
+    def test_output_gets_the_permissions_the_umask_allows(
+        self, editor: FakeEditor, write_image: WriteImage
+    ) -> None:
+        source = write_image(Image.new("RGB", (1024, 1024), "red"))
+        previous_umask = os.umask(0o022)
+        try:
+            result = CliRunner().invoke(cli, [str(source)], obj={"editor": editor})
+        finally:
+            os.umask(previous_umask)
+
+        assert result.exit_code == 0
+        output = source.with_name("source-no-bg.png")
+        assert stat.S_IMODE(output.stat().st_mode) == 0o644
 
     def test_success_leaves_no_temporary_files(
         self, editor: FakeEditor, write_image: WriteImage

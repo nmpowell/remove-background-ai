@@ -1,6 +1,6 @@
 import json
 import os
-import tempfile
+import secrets
 from pathlib import Path
 from typing import NoReturn, cast, get_args
 
@@ -232,17 +232,14 @@ class _ImageFailed(Exception):
 
 
 def _write_atomic(output: Path, png: bytes, *, force: bool) -> None:
-    temporary: Path | None = None
+    # A plain exclusive open, unlike tempfile, leaves the permissions to the umask.
+    temporary = output.with_name(f".{output.name}.{secrets.token_hex(8)}.tmp")
     try:
-        with tempfile.NamedTemporaryFile(
-            dir=output.parent, prefix=f".{output.name}.", suffix=".tmp", delete=False
-        ) as file:
-            temporary = Path(file.name)
+        with temporary.open("xb") as file:
             file.write(png)
         if force:
             os.replace(temporary, output)
         else:
             os.link(temporary, output)
     finally:
-        if temporary is not None:
-            temporary.unlink(missing_ok=True)
+        temporary.unlink(missing_ok=True)
