@@ -43,3 +43,16 @@ class TestRemoveBackground:
         assert result.size == (1920, 1080)
         assert result.getpixel((960, 540)) == (*SOURCE_RGB, 255)
         assert result.getpixel((5, 5)) == (*SOURCE_RGB, 0)
+
+    def test_applies_the_exif_orientation_before_sizing(
+        self, editor: FakeEditor, write_image: WriteImage
+    ) -> None:
+        stored = Image.new("RGB", (1200, 800), SOURCE_RGB)
+        exif = stored.getexif()
+        exif[0x0112] = 6  # Orientation: rotate 90° clockwise to display.
+        source = write_image(stored, "photo.jpg", exif=exif)
+
+        cutout = remove_background(source, editor=editor)
+
+        assert editor.requests[0].size == ImageSize(width=800, height=1200)
+        assert decode(cutout.png).size == (800, 1200)

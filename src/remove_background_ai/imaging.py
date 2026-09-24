@@ -1,7 +1,7 @@
 import io
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 from .models import ImageSize
 
@@ -10,7 +10,7 @@ def load_source(path: Path) -> Image.Image:
     """Decode a source image."""
     with Image.open(path) as image:
         image.load()
-        return image.convert("RGB")
+        return ImageOps.exif_transpose(image).convert("RGB")
 
 
 def encode_request(image: Image.Image, size: ImageSize) -> bytes:
