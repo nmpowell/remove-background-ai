@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from pydantic import ConfigDict, InstanceOf, SkipValidation, validate_call
+
 from . import imaging
 from .editor import ImageEditor
 from .models import Cutout, EditRequest, ImageSize, RemovalOptions
@@ -26,11 +28,12 @@ The supplied mask marks the subject: keep its opaque area and remove the backgro
 in its transparent area."""
 
 
+@validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True))
 def remove_background(
     image: Path,
     *,
-    editor: ImageEditor,
-    options: RemovalOptions = DEFAULT_OPTIONS,
+    editor: SkipValidation[ImageEditor],
+    options: InstanceOf[RemovalOptions] = DEFAULT_OPTIONS,
     mask: Path | None = None,
 ) -> Cutout:
     """Remove the background from an image file.
