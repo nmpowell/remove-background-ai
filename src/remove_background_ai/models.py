@@ -34,12 +34,34 @@ class RemovalOptions(BaseModel):
     quality: Quality = "high"
 
 
+class TokenDetails(BaseModel):
+    """Image and text token counts."""
+
+    model_config = _FROZEN
+
+    image_tokens: int
+    text_tokens: int
+
+
+class Usage(BaseModel):
+    """Token usage the API reported for one edit."""
+
+    model_config = _FROZEN
+
+    input_tokens: int
+    output_tokens: int
+    total_tokens: int
+    input_tokens_details: TokenDetails | None = None
+    output_tokens_details: TokenDetails | None = None
+
+
 class EditRequest(BaseModel):
     """One image edit to send to the model."""
 
     model_config = _FROZEN
 
     image: bytes
+    mask: bytes | None = None
     prompt: str
     model: ModelName
     quality: Quality
@@ -53,7 +75,7 @@ class EditResponse(BaseModel):
 
     image: bytes
     request_id: str | None
-    usage: None
+    usage: Usage | None
 
 
 class Cutout(BaseModel):
