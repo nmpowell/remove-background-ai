@@ -1,0 +1,59 @@
+[project]
+name = "remove-background-ai"
+version = "0.1.0"
+description = "Remove image backgrounds with OpenAI's GPT Image 2.5 and get a transparent PNG"
+readme = "README.md"
+requires-python = ">=3.14"
+authors = [{ name = "Nick Powell" }]
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+keywords = ["background-removal", "openai", "gpt-image", "transparent-png", "cli"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Multimedia :: Graphics",
+    "Typing :: Typed",
+]
+dependencies = [
+    "click>=8.5,<9",
+    "openai>=3.19.2,<4",
+    "pillow>=12.3,<13",
+    "pydantic>=2.13,<3",
+]
+
+[project.urls]
+Homepage = "https://github.com/nmpowell/remove-background-ai"
+Issues = "https://github.com/nmpowell/remove-background-ai/issues"
+Changelog = "https://github.com/nmpowell/remove-background-ai/releases"
+
+[project.scripts]
+remove-background-ai = "remove_background_ai.cli:cli"
+
+[dependency-groups]
+dev = [
+    "cogapp>=3.6",
+    "hypothesis>=6.168",
+    "mypy>=2.3",
+    "pytest>=9.1",
+    "ruff>=0.16",
+]
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.mypy]
+packages = ["remove_background_ai"]
+strict = true
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--strict-markers"]
+markers = ["live: calls the paid OpenAI API; needs RUN_LIVE_OPENAI_TESTS=1 and OPENAI_API_KEY"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
