@@ -201,6 +201,25 @@ class TestOpenAIImageEditor:
         assert result.usage is not None
         assert result.usage.total_tokens == 46
 
+    def test_drops_usage_it_cannot_read(self) -> None:
+        received: list[httpx.Request] = []
+        client = client_returning(
+            httpx.Response(
+                200,
+                json={
+                    "created": 0,
+                    "data": [{"b64_json": "cG5n"}],
+                    "usage": {"total_tokens": 46},
+                },
+            ),
+            received,
+        )
+
+        result = OpenAIImageEditor(client).edit(edit_request())
+
+        assert result.image == b"png"
+        assert result.usage is None
+
     def test_api_status_error_reports_safe_message_status_and_request_id(self) -> None:
         received: list[httpx.Request] = []
         client = client_returning(
@@ -264,8 +283,15 @@ class TestOpenAIImageEditor:
 
     @pytest.mark.parametrize(
         "data",
-        [None, [], [{}], [{"b64_json": "%%%"}]],
-        ids=["null-data", "empty-data", "missing-base64", "invalid-base64"],
+        [None, [], [{}], [{"b64_json": "%%%"}], [None], [{"b64_json": 123}]],
+        ids=[
+            "null-data",
+            "empty-data",
+            "missing-base64",
+            "invalid-base64",
+            "null-image",
+            "numeric-base64",
+        ],
     )
     def test_malformed_image_response_raises_edit_error(self, data: object) -> None:
         received: list[httpx.Request] = []
