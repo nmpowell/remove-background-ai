@@ -91,7 +91,6 @@ class TestOpenAIImageEditor:
             "prompt",
             "background",
             "output_format",
-            "input_fidelity",
             "quality",
             "size",
             "n",
@@ -106,7 +105,6 @@ class TestOpenAIImageEditor:
         assert parts["prompt"].get_payload(decode=True) == b"Remove the background"
         assert parts["background"].get_payload(decode=True) == b"transparent"
         assert parts["output_format"].get_payload(decode=True) == b"png"
-        assert parts["input_fidelity"].get_payload(decode=True) == b"high"
         assert parts["quality"].get_payload(decode=True) == b"high"
         assert parts["size"].get_payload(decode=True) == b"1024x1536"
         assert parts["n"].get_payload(decode=True) == b"1"
