@@ -3,7 +3,7 @@ from pathlib import Path
 from pydantic import ConfigDict, InstanceOf, SkipValidation, validate_call
 
 from . import imaging
-from .editor import ImageEditor
+from .editor import ImageEditor, OpenAIImageEditor
 from .models import Cutout, EditRequest, ImageSize, RemovalOptions
 from .sizing import model_size_for
 
@@ -32,16 +32,19 @@ in its transparent area."""
 def remove_background(
     image: Path,
     *,
-    editor: SkipValidation[ImageEditor],
+    editor: SkipValidation[ImageEditor | None] = None,
     options: InstanceOf[RemovalOptions] = DEFAULT_OPTIONS,
     mask: Path | None = None,
 ) -> Cutout:
     """Remove the background from an image file.
 
     ``mask`` is an optional image the size of the upright source: white keeps,
-    black removes.
+    black removes. ``editor`` defaults to the OpenAI API, authenticated by the
+    ``OPENAI_API_KEY`` environment variable.
     """
     source = imaging.load_source(image)
+    if editor is None:
+        editor = OpenAIImageEditor()
     source_size = ImageSize(width=source.width, height=source.height)
     size = model_size_for(source_size)
     response = editor.edit(
