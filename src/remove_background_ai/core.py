@@ -27,6 +27,8 @@ def remove_background(
             size=size,
         )
     )
+    if options.mode == "generated":
+        return Cutout(png=response.image)
     return Cutout(
         png=imaging.apply_alpha(source, imaging.decode_cutout(response.image))
     )
