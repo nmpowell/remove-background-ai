@@ -56,3 +56,14 @@ class TestRemoveBackground:
 
         assert editor.requests[0].size == ImageSize(width=800, height=1200)
         assert decode(cutout.png).size == (800, 1200)
+
+    def test_never_makes_a_semi_transparent_source_more_opaque(
+        self, editor: FakeEditor, write_image: WriteImage
+    ) -> None:
+        source = write_image(Image.new("RGBA", (1024, 1024), (*SOURCE_RGB, 128)))
+
+        cutout = remove_background(source, editor=editor)
+
+        result = decode(cutout.png)
+        assert result.getpixel((512, 512)) == (*SOURCE_RGB, 128)
+        assert result.getpixel((0, 0)) == (*SOURCE_RGB, 0)
