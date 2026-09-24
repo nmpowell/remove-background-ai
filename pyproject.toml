@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Remove image backgrounds with OpenAI's GPT Image 2.5 and get a transparent PNG"
 readme = "README.md"
 requires-python = ">=3.14"
-authors = [{ name = "Nick Powell" }]
+authors = [{ name = "Nick Powell", email = "hey+remove-background-ai@nickmp.com" }]
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 keywords = ["background-removal", "openai", "gpt-image", "transparent-png", "cli"]
