@@ -295,3 +295,15 @@ class TestColourProfiles:
         cutout = remove_background(source, editor=editor)
 
         assert "icc_profile" not in decode(cutout.png).info
+
+    def test_sends_the_rgb_colour_profile_to_the_model(
+        self, editor: FakeEditor, write_image: WriteImage
+    ) -> None:
+        profile = icc("sRGB")
+        source = write_image(
+            Image.new("RGB", (1024, 1024), SOURCE_RGB), icc_profile=profile
+        )
+
+        remove_background(source, editor=editor)
+
+        assert decode(editor.requests[0].image).info.get("icc_profile") == profile

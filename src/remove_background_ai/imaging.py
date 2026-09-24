@@ -22,7 +22,10 @@ def load_source(path: Path) -> Image.Image:
 
 def encode_request(image: Image.Image, size: ImageSize) -> bytes:
     """Encode the image as the PNG to send to the model, at the model size."""
-    return _png(image.resize((size.width, size.height), Image.Resampling.LANCZOS))
+    return _png(
+        image.resize((size.width, size.height), Image.Resampling.LANCZOS),
+        icc_profile=image.info.get("icc_profile"),
+    )
 
 
 def encode_mask(path: Path, source_size: ImageSize, size: ImageSize) -> bytes:
