@@ -81,7 +81,7 @@ The model redraws the whole image, so it can soften a label, move an edge or cha
 | `original` (default) | Your pixels, with the model's alpha channel | Your image's size |
 | `generated` | The PNG the model returned, byte for byte | The size sent to the model |
 
-In `original` mode the transparency is still the model's work. An edge can land a few pixels off, and hair or glass can carry a fringe of the old background. Look at the result on a dark and a light backdrop before you rely on it. `generated` mode keeps the provenance metadata (C2PA) that OpenAI embeds in the PNG. `original` mode writes a new file, so that metadata is lost.
+In `original` mode the transparency is still the model's work. An edge can land a few pixels off, and a thin band of the old background can survive along the subject's outline: in testing, a strip of brick wall stayed along the top of a backpack. `generated` mode gives cleaner edges, because the model redraws them. Look at the result on a dark and a light backdrop before you rely on it. `generated` mode keeps the provenance metadata (C2PA) that OpenAI embeds in the PNG. `original` mode writes a new file, so that metadata is lost.
 
 ### Image sizes
 
@@ -116,26 +116,26 @@ Grey at half intensity or brighter counts as white. The mask guides the model, w
 ```json
 [
   {
-    "input": "photo.jpg",
-    "output": "photo-no-bg.png",
+    "input": "mug.jpg",
+    "output": "mug-no-bg.png",
     "mode": "original",
     "model": "gpt-image-2.5-sunburst-2026-09-08",
-    "quality": "high",
-    "source_size": "1920x1080",
-    "model_size": "1920x1088",
-    "output_size": "1920x1080",
-    "request_id": "req_…",
+    "quality": "medium",
+    "source_size": "1300x1132",
+    "model_size": "1312x1136",
+    "output_size": "1300x1132",
+    "request_id": "req_e4351b4660894c96ad6f08a86fc013aa",
     "usage": {
-      "input_tokens": 1234,
-      "output_tokens": 5678,
-      "total_tokens": 6912,
-      "input_tokens_details": {"image_tokens": 1100, "text_tokens": 134},
-      "output_tokens_details": null
+      "input_tokens": 1618,
+      "output_tokens": 440,
+      "total_tokens": 2058,
+      "input_tokens_details": {"image_tokens": 1476, "text_tokens": 142},
+      "output_tokens_details": {"image_tokens": 440, "text_tokens": 0}
     }
   },
   {
     "input": "broken.png",
-    "error": "broken.png cannot be read as an image: …"
+    "error": "broken.png cannot be read as an image: cannot identify image file 'broken.png'"
   }
 ]
 ```
