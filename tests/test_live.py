@@ -39,6 +39,7 @@ def test_removes_the_background_around_a_disc(tmp_path: Path) -> None:
     alpha = result.getchannel("A")
     assert result.size == (1200, 800)
     assert str(cutout.model_size) == "1200x800"
-    assert alpha.getpixel((600, 400)) == 255
-    assert alpha.getpixel((20, 20)) == 0
-    assert alpha.getpixel((1180, 780)) == 0
+    # The model's alpha is generated, so "opaque" can come back as 254.
+    assert alpha.getpixel((600, 400)) >= 250
+    assert alpha.getpixel((20, 20)) <= 5
+    assert alpha.getpixel((1180, 780)) <= 5
