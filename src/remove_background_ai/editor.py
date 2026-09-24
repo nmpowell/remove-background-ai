@@ -55,7 +55,8 @@ class OpenAIImageEditor:
         except OpenAIError as error:
             raise EditError(f"OpenAI image edit request failed: {error}") from None
         # The SDK does not validate responses against its own types.
-        first = response.data[0] if response.data else None
+        data = response.data
+        first = data[0] if isinstance(data, list) and data else None
         encoded = getattr(first, "b64_json", None)
         if not isinstance(encoded, str):
             raise EditError("OpenAI image edit response has no image data")

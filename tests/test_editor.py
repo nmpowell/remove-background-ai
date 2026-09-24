@@ -283,7 +283,16 @@ class TestOpenAIImageEditor:
 
     @pytest.mark.parametrize(
         "data",
-        [None, [], [{}], [{"b64_json": "%%%"}], [None], [{"b64_json": 123}]],
+        [
+            None,
+            [],
+            [{}],
+            [{"b64_json": "%%%"}],
+            [None],
+            [{"b64_json": 123}],
+            {"b64_json": "cG5n"},
+            123,
+        ],
         ids=[
             "null-data",
             "empty-data",
@@ -291,6 +300,8 @@ class TestOpenAIImageEditor:
             "invalid-base64",
             "null-image",
             "numeric-base64",
+            "object-data",
+            "numeric-data",
         ],
     )
     def test_malformed_image_response_raises_edit_error(self, data: object) -> None:
