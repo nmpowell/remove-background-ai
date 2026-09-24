@@ -216,3 +216,17 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local-only files
+.DS_Store
+.claude/
+.vscode/
+.idea/
+
+# Test images and outputs never belong in this repository
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.heic
