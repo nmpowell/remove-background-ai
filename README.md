@@ -97,7 +97,7 @@ GPT Image 2.5 only produces images whose width and height are multiples of 16, w
 
 Sending 1920×1080 as 1920×1088 changes the aspect ratio slightly. Scaling the transparency back to 1920×1080 undoes that change, so the cutout does not shift.
 
-The command first turns the image upright using its EXIF orientation. It accepts any format Pillow can open (JPEG, PNG, WebP, TIFF and others) in any colour mode, and always writes an 8-bit RGBA PNG. If your image already has transparency, the output never makes it more opaque. An embedded RGB colour profile is kept in `original` mode; other profiles, such as CMYK, would describe the wrong colours after conversion and are dropped. EXIF data is not copied. Animated images are refused.
+The command first turns the image upright using its EXIF orientation. It accepts any format Pillow can open (JPEG, PNG, WebP, TIFF and others) in any colour mode, and always writes an 8-bit RGBA PNG. If your image already has transparency, the output never makes it more opaque. An embedded RGB colour profile goes to the model with the image and stays in the `original` output. Other profiles would describe the wrong colours after conversion, so they are dropped. CMYK images are converted to RGB without colour management, so their colours can shift; convert them to RGB yourself first if colour matters. EXIF data is not copied. Animated images are refused.
 
 ### Masks
 
@@ -156,7 +156,7 @@ With several images the command carries on after a failure. If any image failed,
 
 ## Timeouts and retries
 
-Each attempt has a 300-second timeout, and the OpenAI SDK retries twice after a rate limit, a server error, a dropped connection or a timeout, so one image can take up to 15 minutes. A retried request can be billed more than once, because the server may have finished the first attempt.
+The OpenAI client waits up to 300 seconds on each network operation and retries twice after a rate limit, a server error, a dropped connection or a timeout, pausing between attempts as the server asks. There is no overall deadline, so a slow image can take many minutes. A retried request can be billed more than once, because the server may have finished the first attempt.
 
 ## Python library
 
