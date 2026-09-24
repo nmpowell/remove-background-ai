@@ -23,6 +23,8 @@ Description = Annotated[
 ]
 
 _FROZEN = ConfigDict(frozen=True, extra="forbid")
+# The API may add usage fields; a new one must not fail a request that was paid for.
+_FROZEN_IGNORING_EXTRA = ConfigDict(frozen=True, extra="ignore")
 
 
 class ImageSize(BaseModel):
@@ -68,7 +70,7 @@ class RemovalOptions(BaseModel):
 class TokenDetails(BaseModel):
     """Image and text token counts."""
 
-    model_config = _FROZEN
+    model_config = _FROZEN_IGNORING_EXTRA
 
     image_tokens: int
     text_tokens: int
@@ -77,7 +79,7 @@ class TokenDetails(BaseModel):
 class Usage(BaseModel):
     """Token usage the API reported for one edit."""
 
-    model_config = _FROZEN
+    model_config = _FROZEN_IGNORING_EXTRA
 
     input_tokens: int
     output_tokens: int
