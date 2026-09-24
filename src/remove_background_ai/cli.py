@@ -2,7 +2,7 @@ import json
 import os
 import tempfile
 from pathlib import Path
-from typing import cast, get_args
+from typing import NoReturn, cast, get_args
 
 import click
 from pydantic import ValidationError
@@ -143,14 +143,13 @@ def cli(
             else OpenAIImageEditor()
         )
     except EditError as error:
-        click.echo(f"Error: {error}", err=True)
-        raise SystemExit(EXIT_EDIT_FAILED) from None
+        _fail_every_image(images, str(error), EXIT_EDIT_FAILED, as_json=as_json)
     if output_dir is not None:
         try:
             output_dir.mkdir(parents=True, exist_ok=True)
         except OSError as error:
-            click.echo(f"Error: cannot create {output_dir}: {error}", err=True)
-            raise SystemExit(EXIT_REFUSED) from None
+            message = f"cannot create {output_dir}: {error}"
+            _fail_every_image(images, message, EXIT_REFUSED, as_json=as_json)
     results: list[dict[str, object]] = []
     exit_code = 0
     for image, destination in zip(images, destinations, strict=True):
@@ -213,6 +212,16 @@ def _process_one(
     except OSError as error:
         raise _ImageFailed(f"cannot write {output}: {error}", EXIT_REFUSED) from None
     return cutout
+
+
+def _fail_every_image(
+    images: tuple[Path, ...], message: str, exit_code: int, *, as_json: bool
+) -> NoReturn:
+    click.echo(f"Error: {message}", err=True)
+    if as_json:
+        records = [{"input": str(image), "error": message} for image in images]
+        click.echo(json.dumps(records, indent=2))
+    raise SystemExit(exit_code)
 
 
 class _ImageFailed(Exception):
