@@ -1,13 +1,64 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, PositiveInt
+
+ModelName = Literal[
+    "gpt-image-2.5-sunburst-2026-09-08",
+    "gpt-image-2.5-sunburst",
+    "gpt-image-2.5-flare-2026-09-08",
+    "gpt-image-2.5-flare",
+]
+Quality = Literal["low", "medium", "high", "xhigh", "max", "auto"]
+
+_FROZEN = ConfigDict(frozen=True, extra="forbid")
 
 
 class ImageSize(BaseModel):
     """Width and height of an image in pixels."""
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = _FROZEN
 
     width: PositiveInt
     height: PositiveInt
 
     def __str__(self) -> str:
         return f"{self.width}x{self.height}"
+
+
+class RemovalOptions(BaseModel):
+    """How to remove a background."""
+
+    model_config = _FROZEN
+
+    model: ModelName = "gpt-image-2.5-sunburst-2026-09-08"
+    quality: Quality = "high"
+
+
+class EditRequest(BaseModel):
+    """One image edit to send to the model."""
+
+    model_config = _FROZEN
+
+    image: bytes
+    prompt: str
+    model: ModelName
+    quality: Quality
+    size: ImageSize
+
+
+class EditResponse(BaseModel):
+    """The image the model returned, with its request metadata."""
+
+    model_config = _FROZEN
+
+    image: bytes
+    request_id: str | None
+    usage: None
+
+
+class Cutout(BaseModel):
+    """A transparent PNG with the background removed."""
+
+    model_config = _FROZEN
+
+    png: bytes
