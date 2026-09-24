@@ -6,9 +6,9 @@ import pytest
 from PIL import Image, ImageCms
 
 from remove_background_ai import remove_background
-from remove_background_ai.models import ImageSize
+from remove_background_ai.models import ImageSize, RemovalOptions
 
-from .conftest import FakeEditor
+from .conftest import FakeEditor, cutout_png
 
 SOURCE_RGB = (200, 30, 30)
 WriteImage = Callable[..., Path]
@@ -127,3 +127,16 @@ class TestRemoveBackground:
         result = decode(cutout.png)
         assert result.mode == "RGBA"
         assert result.getpixel((512, 512)) == (*expected_rgb, 255)
+
+    def test_generated_mode_returns_the_model_png_unchanged(
+        self, write_image: WriteImage
+    ) -> None:
+        model_png = cutout_png(1920, 1088)
+        editor = FakeEditor(response_png=model_png)
+        source = write_image(Image.new("RGB", (1920, 1080), SOURCE_RGB))
+
+        cutout = remove_background(
+            source, editor=editor, options=RemovalOptions(mode="generated")
+        )
+
+        assert cutout.png == model_png

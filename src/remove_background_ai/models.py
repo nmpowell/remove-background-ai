@@ -9,6 +9,7 @@ ModelName = Literal[
     "gpt-image-2.5-flare",
 ]
 Quality = Literal["low", "medium", "high", "xhigh", "max", "auto"]
+OutputMode = Literal["original", "generated"]
 
 _FROZEN = ConfigDict(frozen=True, extra="forbid")
 
@@ -32,6 +33,9 @@ class RemovalOptions(BaseModel):
 
     model: ModelName = "gpt-image-2.5-sunburst-2026-09-08"
     quality: Quality = "high"
+    mode: OutputMode = "original"
+    """``original`` puts the model's alpha on the source pixels at the source size;
+    ``generated`` returns the model's own PNG at the model size."""
 
 
 class TokenDetails(BaseModel):
