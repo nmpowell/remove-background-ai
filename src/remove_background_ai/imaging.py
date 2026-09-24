@@ -1,18 +1,24 @@
 import io
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageOps
+from PIL import Image, ImageChops, ImageCms, ImageOps
 
 from .models import ImageSize
 
 
 def load_source(path: Path) -> Image.Image:
-    """Decode a source image."""
+    """Decode a source image as upright 8-bit RGB or RGBA.
+
+    Its colour profile survives in ``info`` only when it describes RGB samples.
+    """
     with Image.open(path) as image:
         image.load()
         oriented = ImageOps.exif_transpose(image)
         has_alpha = "A" in oriented.getbands() or "transparency" in oriented.info
-        return oriented.convert("RGBA" if has_alpha else "RGB")
+        source = oriented.convert("RGBA" if has_alpha else "RGB")
+    profile = source.info.get("icc_profile")
+    source.info = {"icc_profile": profile} if _is_rgb_profile(profile) else {}
+    return source
 
 
 def encode_request(image: Image.Image, size: ImageSize) -> bytes:
@@ -37,10 +43,20 @@ def apply_alpha(source: Image.Image, cutout: Image.Image) -> bytes:
         alpha = ImageChops.darker(alpha, source.getchannel("A"))
     result = source.convert("RGBA")
     result.putalpha(alpha)
-    return _png(result)
+    return _png(result, icc_profile=source.info.get("icc_profile"))
 
 
-def _png(image: Image.Image) -> bytes:
+def _is_rgb_profile(profile: object) -> bool:
+    if not isinstance(profile, bytes):
+        return False
+    try:
+        parsed = ImageCms.ImageCmsProfile(io.BytesIO(profile))
+    except ImageCms.PyCMSError:
+        return False
+    return parsed.profile.xcolor_space == "RGB "
+
+
+def _png(image: Image.Image, *, icc_profile: bytes | None = None) -> bytes:
     buffer = io.BytesIO()
-    image.save(buffer, format="PNG")
+    image.save(buffer, format="PNG", icc_profile=icc_profile)
     return buffer.getvalue()
