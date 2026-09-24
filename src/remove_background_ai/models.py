@@ -1,6 +1,6 @@
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, PositiveInt
+from pydantic import BaseModel, ConfigDict, PositiveInt, StringConstraints
 
 ModelName = Literal[
     "gpt-image-2.5-sunburst-2026-09-08",
@@ -10,6 +10,9 @@ ModelName = Literal[
 ]
 Quality = Literal["low", "medium", "high", "xhigh", "max", "auto"]
 OutputMode = Literal["original", "generated"]
+Description = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=10_000)
+]
 
 _FROZEN = ConfigDict(frozen=True, extra="forbid")
 
@@ -36,6 +39,10 @@ class RemovalOptions(BaseModel):
     mode: OutputMode = "original"
     """``original`` puts the model's alpha on the source pixels at the source size;
     ``generated`` returns the model's own PNG at the model size."""
+    keep: Description | None = None
+    """What to keep, e.g. "the red backpack, including both straps"."""
+    remove: Description | None = None
+    """What to remove besides the background, e.g. "the stand and its shadow"."""
 
 
 class TokenDetails(BaseModel):
