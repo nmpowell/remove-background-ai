@@ -340,6 +340,43 @@ class TestPerImageResults:
         assert result.stdout == ""
         assert "Error: Set OPENAI_API_KEY" in result.stderr
 
+    def test_missing_api_key_reports_every_image_in_json(
+        self, write_image: WriteImage, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        first = write_image(Image.new("RGB", (1024, 1024), "red"), "first.png")
+        second = write_image(Image.new("RGB", (1024, 1024), "red"), "second.png")
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+        result = CliRunner().invoke(cli, [str(first), str(second), "--json"])
+
+        assert result.exit_code == 4
+        assert json.loads(result.stdout) == [
+            {
+                "input": str(first),
+                "error": "Set OPENAI_API_KEY to use the image editor",
+            },
+            {
+                "input": str(second),
+                "error": "Set OPENAI_API_KEY to use the image editor",
+            },
+        ]
+
+    def test_output_dir_creation_error_reports_every_image_in_json(
+        self, editor: FakeEditor, write_image: WriteImage, tmp_path: Path
+    ) -> None:
+        source = write_image(Image.new("RGB", (1024, 1024), "red"))
+        directory = tmp_path / "file"
+        directory.write_text("occupied")
+
+        result = CliRunner().invoke(
+            cli, [str(source), "-d", str(directory), "--json"], obj={"editor": editor}
+        )
+
+        assert result.exit_code == 3
+        [record] = json.loads(result.stdout)
+        assert record["input"] == str(source)
+        assert record["error"].startswith(f"cannot create {directory}: ")
+
     def test_success_leaves_no_temporary_files(
         self, editor: FakeEditor, write_image: WriteImage
     ) -> None:
