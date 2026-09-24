@@ -9,6 +9,16 @@ uvx remove-background-ai photo.jpg
 
 That writes `photo-no-bg.png` next to `photo.jpg`: your original pixels, at their original size, with the background made transparent.
 
+Sometimes, being specific about what you want to keep, and what to remove helps get better results. For example:
+
+```bash
+uvx remove-background-ai docs/images/tintin.jpg --remove "the background" --keep "the bar top on the right"
+```
+
+| Before | After |
+| :---: | :---: |
+| ![Tintin and Captain Haddock at a bar, on a flat tan background](https://raw.githubusercontent.com/nmpowell/remove-background-ai/main/docs/images/tintin.jpg) | ![The same panel with the background transparent and the bar top kept](https://raw.githubusercontent.com/nmpowell/remove-background-ai/main/docs/images/tintin-no-bg.png) |
+
 > ⚠️ Much of this is AI-generated, and not formally reviewed by hand or eye. It's published chiefly for myself: for my own reference, use, and for experimentation with the whole open-source publishing process. I also *use* this code: I dogfood it. It works, for me. I also write tests, and run them to check that it works, and does what it says.
 
 ## Installation
