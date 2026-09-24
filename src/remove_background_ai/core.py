@@ -20,6 +20,10 @@ crop, sharpen or reconstruct hidden parts.
 Make every removed region fully transparent, including background seen through gaps \
 and openings. Use partially transparent pixels where an edge is soft. Add no \
 scenery, outline, replacement background, white fill, checkerboard or new shadow."""
+_MASK_NOTE = """
+
+The supplied mask marks the subject: keep its opaque area and remove the background \
+in its transparent area."""
 
 
 def remove_background(
@@ -27,14 +31,21 @@ def remove_background(
     *,
     editor: ImageEditor,
     options: RemovalOptions = DEFAULT_OPTIONS,
+    mask: Path | None = None,
 ) -> Cutout:
-    """Remove the background from an image file."""
+    """Remove the background from an image file.
+
+    ``mask`` is an optional image the size of the upright source: white keeps,
+    black removes.
+    """
     source = imaging.load_source(image)
-    size = model_size_for(ImageSize(width=source.width, height=source.height))
+    source_size = ImageSize(width=source.width, height=source.height)
+    size = model_size_for(source_size)
     response = editor.edit(
         EditRequest(
             image=imaging.encode_request(source, size),
-            prompt=_prompt(options),
+            mask=None if mask is None else imaging.encode_mask(mask, source_size, size),
+            prompt=_prompt(options, masked=mask is not None),
             model=options.model,
             quality=options.quality,
             size=size,
@@ -46,8 +57,9 @@ def remove_background(
     return Cutout(png=imaging.apply_alpha(source, cutout))
 
 
-def _prompt(options: RemovalOptions) -> str:
-    return _PROMPT.format(
+def _prompt(options: RemovalOptions, *, masked: bool) -> str:
+    prompt = _PROMPT.format(
         keep=(options.keep or "the main subject").rstrip("."),
         remove=(options.remove or "everything else").rstrip("."),
     )
+    return prompt + _MASK_NOTE if masked else prompt
