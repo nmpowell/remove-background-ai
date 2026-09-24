@@ -1,7 +1,7 @@
 import io
 from pathlib import Path
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageChops, ImageOps
 
 from .models import ImageSize
 
@@ -10,7 +10,9 @@ def load_source(path: Path) -> Image.Image:
     """Decode a source image."""
     with Image.open(path) as image:
         image.load()
-        return ImageOps.exif_transpose(image).convert("RGB")
+        oriented = ImageOps.exif_transpose(image)
+        has_alpha = "A" in oriented.getbands() or "transparency" in oriented.info
+        return oriented.convert("RGBA" if has_alpha else "RGB")
 
 
 def encode_request(image: Image.Image, size: ImageSize) -> bytes:
@@ -26,8 +28,13 @@ def decode_cutout(png: bytes) -> Image.Image:
 
 
 def apply_alpha(source: Image.Image, cutout: Image.Image) -> bytes:
-    """Return the source pixels with the cutout's alpha, as a PNG."""
+    """Return the source pixels with the cutout's alpha, as a PNG.
+
+    The cutout's alpha is total opacity, so it never raises the source's own alpha.
+    """
     alpha = cutout.getchannel("A").resize(source.size, Image.Resampling.LANCZOS)
+    if source.mode == "RGBA":
+        alpha = ImageChops.darker(alpha, source.getchannel("A"))
     result = source.convert("RGBA")
     result.putalpha(alpha)
     return _png(result)
