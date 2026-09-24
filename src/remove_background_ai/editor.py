@@ -37,7 +37,6 @@ class OpenAIImageEditor:
                 prompt=request.prompt,
                 background="transparent",
                 output_format="png",
-                input_fidelity="high",
                 quality=request.quality,
                 size=str(request.size),
                 n=1,
