@@ -96,7 +96,7 @@ def _is_rgb_profile(profile: object) -> bool:
         return False
     try:
         parsed = ImageCms.ImageCmsProfile(io.BytesIO(profile))
-    except ImageCms.PyCMSError:
+    except ImageCms.PyCMSError, OSError:
         return False
     return parsed.profile.xcolor_space == "RGB "
 

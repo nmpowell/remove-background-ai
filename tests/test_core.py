@@ -282,3 +282,16 @@ class TestRemoveBackgroundArguments:
 
         with pytest.raises(EditError, match="OPENAI_API_KEY"):
             remove_background(source)
+
+
+class TestColourProfiles:
+    def test_drops_a_malformed_colour_profile(
+        self, editor: FakeEditor, write_image: WriteImage
+    ) -> None:
+        source = write_image(
+            Image.new("RGB", (1024, 1024), SOURCE_RGB), icc_profile=b"not a profile"
+        )
+
+        cutout = remove_background(source, editor=editor)
+
+        assert "icc_profile" not in decode(cutout.png).info
